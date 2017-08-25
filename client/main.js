@@ -63,9 +63,28 @@ class SettingsPage extends React.Component {
   }
   handleWebsiteChange = e => this.setState({website: e.target.value});
   handleNameChange = e => this.setState({name: e.target.value});
-  saveUser = (e) => {
+  saveUser = async (e) => {
     e.preventDefault();
-    console.log("TODO: save currentUser")
+    const mutationQuery = `
+mutation UpdateCurrentUserMutation($userChanges: UserPatch!) {
+  updateCurrentUser(input: { userPatch: $userChanges }) {
+    user { id name website }
+  }
+}`;
+    const userChanges = {
+      name: this.state.name,
+      website: this.state.website,
+    };
+    try {
+      await executeGraphQLQuery(mutationQuery, {
+        userChanges
+      });
+      this.setState({saved: true});
+      setTimeout(() => this.setState({saved: null}), 3000);
+    } catch (e) {
+      console.error(e);
+      alert("Something went wrong!");
+    }
   };
   renderLogIn() {
     return (
@@ -104,6 +123,10 @@ class SettingsPage extends React.Component {
           <button type="submit" className="btn btn-primary">
             Save
           </button>
+          {this.state.saved
+              ? <div className='alert alert-success mt-3' role='alert'>Saved 🎉</div>
+              : null
+          }
         </form>
       </section>
     );
