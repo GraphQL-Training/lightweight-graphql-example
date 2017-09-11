@@ -100,38 +100,46 @@ const Layout = ({ loading, data: { currentUser } = {} }) => (
     </div>
 );
 
-const withGraphQLResult = query => Component => class extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      loading: true,
-    };
+async function executeGraphQLQuery(query, variables = {}) {
+  const response = await window.fetch("/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify({
+      query: query,
+      variables: variables
+    })
+  });
+  if (!response.ok) {
+    const err = new Error("GraphQL query failed");
+    err.status = response.status;
+    throw err;
   }
-  componentDidMount() {
-    this.fetch();
-  }
-  async fetch() {
-    try {
-      const result = await window.fetch("/graphql", {
-        method: 'POST',
-        headers: {
-          'Content-Type': "application/json",
-        },
-        body: JSON.stringify({
-          query,
-          variables: {},
-        }),
-      });
-      const json = await result.json();
-      this.setState({loading: false, data: json.data});
-    } catch (e) {
-      this.setState({loading: false, error: e});
+  return await response.json();
+}
+
+const withGraphQLResult = (query, { variables } = {}) => Component =>
+  class extends React.Component {
+    state = { loading: true };
+    componentDidMount() { this.fetch(); }
+    async fetch() {
+      try {
+        const json = await executeGraphQLQuery(query, variables);
+        this.setState({ loading: false, error: null, data: json.data });
+      } catch (e) {
+        this.setState({ loading: false, error: e });
+      }
     }
-  }
-  render() {
-    return <Component loading={this.state.loading} data={this.state.data} error={this.state.error} />;
-  }
-};
+    render() {
+      return <Component
+        loading={this.state.loading}
+        data={this.state.data}
+        error={this.state.error}
+      />;
+    }
+  };
 
 const Root = withGraphQLResult(`{ currentUser { id, name, website } }`)(Layout);
 
