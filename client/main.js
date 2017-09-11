@@ -1,18 +1,19 @@
-const MOCK_DATA = {
-  currentUser: {
-    name: 'Benjie',
-    website: 'https://graphile.org',
-  },
-};
-
 const Header = ({currentUser}) => (
   <nav className='navbar navbar-expand-lg navbar-light bg-light'>
     <a className='navbar-brand' href='/'>
       MyWebsite
     </a>
-    <a className='ml-auto'>
-      {currentUser.name}
-    </a>
+    {
+      currentUser
+      ?
+        <a className='ml-auto'>
+          {currentUser.name}
+        </a>
+      :
+        <a className='ml-auto' href='#login'>
+          Log in
+        </a>
+    }
   </nav>
 );
 
@@ -22,10 +23,20 @@ class SettingsPage extends React.Component {
     this.state = {};
   }
   componentWillMount() {
-    this.setState({
-      name: this.props.currentUser.name,
-      website: this.props.currentUser.website,
-    });
+    if (this.props.currentUser) {
+      this.setState({
+        name: this.props.currentUser.name,
+        website: this.props.currentUser.website,
+      });
+    }
+  }
+  componentWillReceiveProps(nextProps) {
+    if (this.state.name === undefined && nextProps.currentUser) {
+      this.setState({
+        name: nextProps.currentUser.name,
+        website: nextProps.currentUser.website,
+      });
+    }
   }
   handleWebsiteChange = e => this.setState({website: e.target.value});
   handleNameChange = e => this.setState({name: e.target.value});
@@ -33,8 +44,19 @@ class SettingsPage extends React.Component {
     e.preventDefault();
     console.log("TODO: save currentUser")
   };
+  renderLogIn() {
+    return (
+      <section className='container'>
+        <h2 className='mt-5'>Login Required</h2>
+        <p>To access the settings page you must first <a href='#login'>log in</a></p>
+      </section>
+    );
+  }
   render() {
     const {currentUser} = this.props;
+    if (!currentUser) {
+      return this.renderLogIn();
+    }
     return (
       <section className='container'>
         <h2 className='mt-5'>Settings</h2>
@@ -65,12 +87,61 @@ class SettingsPage extends React.Component {
   }
 }
 
-const Layout = ({currentUser}) => (
-  <div>
-    <Header currentUser={currentUser} />
-    <SettingsPage currentUser={currentUser} />
-  </div>
+const Layout = ({ loading, data: { currentUser } = {} }) => (
+  loading
+  ?
+    <div className="progress">
+      <div className="progress-bar progress-bar-striped progress-bar-animated"  role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style={{width: "100%"}} />
+    </div>
+  :
+    <div>
+      <Header currentUser={currentUser} />
+      <SettingsPage currentUser={currentUser} />
+    </div>
 );
 
+async function executeGraphQLQuery(query, variables = {}) {
+  const response = await window.fetch("/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify({
+      query: query,
+      variables: variables
+    })
+  });
+  if (!response.ok) {
+    const err = new Error("GraphQL query failed");
+    err.status = response.status;
+    throw err;
+  }
+  return await response.json();
+}
+
+const withGraphQLResult = (query, { variables } = {}) => Component =>
+  class extends React.Component {
+    state = { loading: true };
+    componentDidMount() { this.fetch(); }
+    async fetch() {
+      try {
+        const json = await executeGraphQLQuery(query, variables);
+        this.setState({ loading: false, error: null, data: json.data });
+      } catch (e) {
+        this.setState({ loading: false, error: e });
+      }
+    }
+    render() {
+      return <Component
+        loading={this.state.loading}
+        data={this.state.data}
+        error={this.state.error}
+      />;
+    }
+  };
+
+const Root = withGraphQLResult(`{ currentUser { id, name, website } }`)(Layout);
+
 const el = document.getElementById('react');
-ReactDOM.render(<Layout {...MOCK_DATA} />, el);
+ReactDOM.render(<Root />, el);
