@@ -1,3 +1,15 @@
+const HeaderProfileLink = ({currentUser: {name}}) => (
+  <a className='ml-auto'>
+    {name}
+  </a>
+);
+
+HeaderProfileLink.HeaderProfileLinkUserFragment = `
+fragment HeaderProfileLinkUserFragment on User {
+  name
+}
+`;
+
 const Header = ({currentUser}) => (
   <nav className='navbar navbar-expand-lg navbar-light bg-light'>
     <a className='navbar-brand' href='/'>
@@ -6,9 +18,7 @@ const Header = ({currentUser}) => (
     {
       currentUser
       ?
-        <a className='ml-auto'>
-          {currentUser.name}
-        </a>
+        <HeaderProfileLink currentUser={currentUser} />
       :
         <a className='ml-auto' href='#login'>
           Log in
@@ -16,6 +26,14 @@ const Header = ({currentUser}) => (
     }
   </nav>
 );
+
+Header.HeaderUserFragment = `
+fragment HeaderUserFragment on User {
+  id
+  ...HeaderProfileLinkUserFragment
+}
+${HeaderProfileLink.HeaderProfileLinkUserFragment}
+`;
 
 class SettingsPage extends React.Component {
   constructor() {
@@ -87,6 +105,14 @@ class SettingsPage extends React.Component {
   }
 }
 
+SettingsPage.SettingsPageUserFragment = `
+fragment SettingsPageUserFragment on User {
+  id
+  name
+  website
+}
+`;
+
 const Layout = ({ loading, data: { currentUser } = {} }) => (
   loading
   ?
@@ -141,7 +167,17 @@ const withGraphQLResult = (query, { variables } = {}) => Component =>
     }
   };
 
-const Root = withGraphQLResult(`{ currentUser { id, name, website } }`)(Layout);
+const Root = withGraphQLResult(`
+query SettingsPageRootQuery {
+  currentUser {
+    ...HeaderUserFragment
+    ...SettingsPageUserFragment
+  }
+}
+
+${Header.HeaderUserFragment}
+${SettingsPage.SettingsPageUserFragment}
+`)(Layout);
 
 const el = document.getElementById('react');
 ReactDOM.render(<Root />, el);
