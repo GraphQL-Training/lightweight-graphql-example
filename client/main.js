@@ -1,5 +1,9 @@
-const HeaderProfileLink = ({currentUser: {name}}) => (
+const HeaderProfileLink = ({currentUser: {name, avatarUrl}}) => (
   <a className='ml-auto'>
+    {avatarUrl
+    ? <img className="rounded-circle mr-2" src={avatarUrl} width="32" height="32" />
+    : null
+    }
     {name}
   </a>
 );
@@ -7,6 +11,7 @@ const HeaderProfileLink = ({currentUser: {name}}) => (
 HeaderProfileLink.HeaderProfileLinkUserFragment = `
 fragment HeaderProfileLinkUserFragment on User {
   name
+  avatarUrl
 }
 `;
 

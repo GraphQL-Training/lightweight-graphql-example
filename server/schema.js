@@ -18,6 +18,9 @@ const User = new GraphQLObjectType({
     website: {
       type: GraphQLString,
     },
+    avatarUrl: {
+      type: GraphQLString,
+    },
   },
 });
 
