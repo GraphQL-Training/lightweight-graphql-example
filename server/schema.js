@@ -30,6 +30,17 @@ const Query = new GraphQLObjectType({
         return getUserById(currentUserId);
       },
     },
+    user: {
+      type: User,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt),
+        }
+      },
+      resolve(data, { id }, { getUserById }) {
+        return getUserById(id);
+      },
+    },
   }
 });
 
