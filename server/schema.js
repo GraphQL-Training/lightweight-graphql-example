@@ -2,6 +2,7 @@ const {
   GraphQLSchema,
   GraphQLNonNull,
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLString,
   GraphQLInt
 } = require('graphql');
@@ -47,6 +48,66 @@ const Query = new GraphQLObjectType({
   }
 });
 
+const UserPatch = new GraphQLInputObjectType({
+  name: 'UserPatch',
+  fields: {
+    name: {
+      type: GraphQLString,
+    },
+    website: {
+      type: GraphQLString,
+    },
+    avatarUrl: {
+      type: GraphQLString,
+    },
+  },
+});
+
+const UpdateCurrentUserInput = new GraphQLInputObjectType({
+  name: "UpdateCurrentUserInput",
+  fields: {
+    clientMutationId: {
+      type: GraphQLString,
+    },
+    userPatch: {
+      type: new GraphQLNonNull(UserPatch),
+    },
+  },
+});
+
+const UpdateUserPayload = new GraphQLObjectType({
+  name: "UpdateUserPayload",
+  fields: {
+    clientMutationId: {
+      type: GraphQLString,
+    },
+    user: {
+      type: User,
+    },
+  },
+});
+
+const Mutation = new GraphQLObjectType({
+  name: 'Mutation',
+  fields: {
+    updateCurrentUser: {
+      type: new GraphQLNonNull(UpdateUserPayload),
+      args: {
+        input: {
+          type: new GraphQLNonNull(UpdateCurrentUserInput),
+        },
+      },
+      async resolve(data, { input: { clientMutationId, userPatch } }, { updateUserById, currentUserId }) {
+        return {
+          clientMutationId: clientMutationId,
+          user: await updateUserById(currentUserId, userPatch),
+        };
+      },
+    },
+  },
+});
+
 module.exports = new GraphQLSchema({
   query: Query,
+  mutation: Mutation,
 });

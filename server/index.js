@@ -1,13 +1,14 @@
 const express = require('express');
 const graphqlHTTP = require('express-graphql');
 const MySchema = require('./schema');
-const { getUserById } = require('./userAPIMock');
+const { getUserById, updateUserById } = require('./userAPIMock');
 
 const app = express();
 
 function setContext(req, res, next) {
   req.currentUserId = 1; // TODO: req.session.userId;
   req.getUserById = getUserById;
+  req.updateUserById = updateUserById;
   next();
 }
 

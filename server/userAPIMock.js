@@ -10,3 +10,12 @@ const ALL_USERS = [
 exports.getUserById = async function(id) {
   return ALL_USERS.find(user => user.id === id);
 }
+
+exports.updateUserById = async function(id, patch) {
+  const user = ALL_USERS.find(user => user.id === id);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  Object.assign(user, patch);
+  return user;
+}
